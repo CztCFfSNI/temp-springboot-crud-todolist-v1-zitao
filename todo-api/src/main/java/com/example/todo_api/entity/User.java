@@ -1,4 +1,3 @@
-// src/main/java/com/example/todo_api/entity/User.java
 package com.example.todo_api.entity;
 
 import jakarta.persistence.*;
@@ -8,9 +7,10 @@ import lombok.*;
 @Table(name = "user")
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder // ✅ 添加这一行
+@Builder // ← 这个注解生成 builder()
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +19,9 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
-    private String password; // 注意：明文密码仅用于测试！
+    @Column(nullable = false)
+    private String password;
 
+    @Column(nullable = false, unique = true)
     private String email;
 }

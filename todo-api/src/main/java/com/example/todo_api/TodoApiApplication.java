@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.security.crypto.password.PasswordEncoder; // ← 添加
 
 @SpringBootApplication
 public class TodoApiApplication implements CommandLineRunner {
@@ -13,17 +14,19 @@ public class TodoApiApplication implements CommandLineRunner {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder; // ← 注入
+
     public static void main(String[] args) {
         SpringApplication.run(TodoApiApplication.class, args);
     }
 
     @Override
     public void run(String... args) throws Exception {
-        // 检查是否有默认用户（比如 username = "user"）
         if (userRepository.findByUsername("user").isEmpty()) {
             User defaultUser = User.builder()
                     .username("user")
-                    .password("password") // 明文，仅测试
+                    .password(passwordEncoder.encode("password")) // ✅ 加密后再存！
                     .email("user@example.com")
                     .build();
             userRepository.save(defaultUser);
