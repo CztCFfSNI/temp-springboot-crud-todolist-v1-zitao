@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3308/tododb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&allowPublicKeyRetrieval=true # 端口别占用，这个很重要，查看通过：lsof -i :3308
+    username: root
+    password: xxxxx # 自己的密码
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false  # 可选：关闭警告

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Todo List</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        input, button, textarea { margin: 5px; padding: 8px; }
+        .task { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .completed { background-color: #e8f5e8; }
+    </style>
+</head>
+<body>
+<h1>Todo List</h1>
+
+<div>
+    <input type="text" id="title" placeholder="Title" />
+    <textarea id="desc" placeholder="Description"></textarea>
+    <select id="status">
+        <option value="PENDING">Pending</option>
+        <option value="COMPLETED">Completed</option>
+    </select>
+    <button onclick="createTask()">Add Task</button>
+</div>
+
+<div id="taskList"></div>
+
+<script>
+    const API_URL = 'http://localhost:8080/api/tasks';
+
+    async function fetchTasks() {
+      const res = await fetch(API_URL);
+      const tasks = await res.json();
+      const list = document.getElementById('taskList');
+      list.innerHTML = tasks.map(t => `
+        <div class="task ${t.status === 'COMPLETED' ? 'completed' : ''}">
+          <h3>${t.title}</h3>
+          <p>${t.description || ''}</p>
+          <small>Status: ${t.status}, Created: ${new Date(t.createdAt).toLocaleString()}</small>
+          <br/>
+          <button onclick="editTask(${t.id}, 'COMPLETED')">Complete</button>
+          <button onclick="editTask(${t.id}, 'PENDING')">Reset</button>
+          <button onclick="deleteTask(${t.id})">Delete</button>
+        </div>
+      `).join('');
+    }
+
+    async function createTask() {
+      const title = document.getElementById('title').value;
+      const desc = document.getElementById('desc').value;
+      const status = document.getElementById('status').value;
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description: desc, status })
+      });
+      document.getElementById('title').value = '';
+      document.getElementById('desc').value = '';
+      fetchTasks();
+    }
+
+    async function editTask(id, status) {
+      await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: '', description: '', status })
+      });
+      fetchTasks();
+    }
+
+    async function deleteTask(id) {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      fetchTasks();
+    }
+
+    // 页面加载时获取任务
+    fetchTasks();
+</script>
+</body>
+</html>
