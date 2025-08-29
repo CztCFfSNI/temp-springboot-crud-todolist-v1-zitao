@@ -4,152 +4,291 @@
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.5-green?logo=spring)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?logo=mysql)
 
-一个简单的TodoList REST API实现，提供基本的CRUD操作。
+一个简单的 TodoList REST API 实现，基于 Spring Boot 3 + JDK 21 + MySQL 8，支持用户绑定任务的 CRUD 操作。
+
+> 🔐 当前版本暂未实现注册/登录功能，所有操作默认绑定到一个预设的默认用户。
+
+---
 
 ## 🚀 项目特点
 
-- **无用户系统**：无注册、无登录、无用户权限管理
-- **单任务表**：仅包含一个任务表(TodoItem)，结构简单
-- **轻量级**：专注于核心功能，无额外复杂功能
-- **RESTful API**：符合REST规范的标准API设计
+- **默认用户绑定**：系统初始化时创建默认用户 `user`，所有任务操作均绑定该用户
+- **双表结构**：包含 `user` 和 `task` 两张表，支持未来扩展用户系统
+- **JWT 预留**：架构设计为未来集成 JWT 认证做准备
+- **Docker 化数据库**：使用 Docker 部署 MySQL，避免本地环境依赖
+- **RESTful API**：符合 REST 规范的标准化接口设计
+
+---
 
 ## ⚙️ 环境要求
 
-- **JDK 21** (必须，Spring Boot 3.x 需要 JDK 17+)
-- **MySQL 8.0+** (其他版本可能需要调整连接参数)
+- **JDK 21**（Spring Boot 3.x 必需）
+- **MySQL 8.0+**（推荐使用 Docker 部署）
 - **Maven 3.6.3+**
-- **IntelliJ IDEA** (推荐，但非必需)
+- **Docker**（用于数据库容器化）
+- **IntelliJ IDEA**（推荐）
 
-## 🗄️ 数据库配置
+---
 
-**重要：** 项目不包含预配置的数据库连接，需要您自行配置。
+## 🗄️ 应用配置
 
-1. 在 `src/main/resources/application.properties` 中添加以下配置：
+### 1. 配置 `src/main/resources/application.yml`
 
-```properties
-# MySQL 连接配置
-spring.datasource.url=jdbc:mysql://localhost:3306/tododb?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-spring.datasource.username=root
-spring.datasource.password=xxxxxx // 如果有，改自己的密码
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3307/tododb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&allowPublicKeyRetrieval=true # 端口别占用，这个很重要，查看通过：lsof -i :3307
+    username: root
+    password: xxxxx # 换自己密码
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
-# JPA 配置
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
 ```
 
-> **注意：**
-> - `allowPublicKeyRetrieval=true` 是解决 MySQL 8.x 连接问题的关键参数
-> - 如果您使用不同的数据库名，请将 `tododb` 替换为您创建的数据库名
-> - 首次运行时，应用会自动创建 `todo_item` 表
+> 🔁 注意：
+>
+> - 使用 `application.yml`（不是 `.properties`）
+> - `allowPublicKeyRetrieval=true` 是连接 MySQL 8 的关键
+> - 推荐使用 `appuser` 而非 `root` 连接
+
+---
 
 ## 🧪 Postman 测试指南
 
-### 1. 创建任务 (POST)
-- **URL**: `http://localhost:8080/api/todos`
+### 1. 获取所有任务 (GET)
+
+- **URL**: `http://localhost:8080/api/tasks`
+- **Method**: GET
+- **预期响应**: 返回默认用户的所有任务列表
+
+### 2. 创建任务 (POST)
+
+- **URL**: `http://localhost:8080/api/tasks`
 - **Method**: POST
 - **Headers**:
   - `Content-Type: application/json`
-- **Body** (raw, JSON):
+- **Body** (JSON):
   ```json
   {
-    "title": "学习Spring Boot",
-    "description": "完成CRUD示例",
+    "title": "学习 Spring Boot",
+    "description": "完成 CRUD 示例",
     "completed": false
   }
   ```
-- **预期响应**: HTTP 201 Created + 创建的任务数据
+- **预期响应**: `201 Created` + 新建任务数据
 
-### 2. 获取所有任务 (GET)
-- **URL**: `http://localhost:8080/api/todos`
+### 3. 获取单个任务 (GET)
+
+- **URL**: `http://localhost:8080/api/tasks/{id}`
 - **Method**: GET
-- **预期响应**: HTTP 200 OK + 任务列表JSON
+- **预期响应**: `200 OK` + 任务详情
 
-### 3. 更新任务 (PUT)
-- **URL**: `http://localhost:8080/api/todos/{id}` (将 `{id}` 替换为任务ID)
+### 4. 更新任务 (PUT)
+
+- **URL**: `http://localhost:8080/api/tasks/{id}`
 - **Method**: PUT
 - **Headers**:
   - `Content-Type: application/json`
-- **Body** (raw, JSON):
+- **Body**:
   ```json
   {
-    "title": "已学会Spring Boot",
-    "description": "已完成CRUD示例",
+    "title": "已学会 Spring Boot",
     "completed": true
   }
   ```
-- **预期响应**: HTTP 200 OK + 更新后的任务数据
+- **预期响应**: `200 OK` + 更新后数据
 
-### 4. 删除任务 (DELETE)
-- **URL**: `http://localhost:8080/api/todos/{id}` (将 `{id}` 替换为任务ID)
+### 5. 删除任务 (DELETE)
+
+- **URL**: `http://localhost:8080/api/tasks/{id}`
 - **Method**: DELETE
-- **预期响应**: HTTP 204 No Content
+- **预期响应**: `204 No Content`
+
+---
 
 ## 🛠 Maven 与 JDK 配置
 
-### 1. Maven 配置
-确保您的 `pom.xml` 包含以下关键配置：
+### 1. `pom.xml` 关键配置
 
 ```xml
-<properties>
-    <java.version>21</java.version>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
-</properties>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-<parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.5</version> <!-- 必须使用3.x版本支持JDK 21 -->
-    <relativePath/>
-</parent>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.5</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <groupId>com.example</groupId>
+    <artifactId>todo-api</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>todo-api</name>
+    <description>Todo List Plain Version</description>
+
+    <!-- 可选：设置项目 URL -->
+    <url>http://localhost:8080</url>
+
+    <!-- 修复：添加实际的 license -->
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <!-- 可选：添加开发者信息 -->
+    <developers>
+        <developer>
+            <name>Your Name</name>
+            <email>you@example.com</email>
+            <organization>Personal</organization>
+            <organizationUrl>http://localhost</organizationUrl>
+        </developer>
+    </developers>
+
+    <!-- 可选：SCM 信息（Git） -->
+    <scm>
+        <connection>scm:git:https://github.com/yourname/todo-api.git</connection>
+        <developerConnection>scm:git:https://github.com/yourname/todo-api.git</developerConnection>
+        <url>https://github.com/yourname/todo-api</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <properties>
+        <java.version>21</java.version>
+        <!-- 显式声明插件版本（可选，Parent 已包含，但显式更清晰） -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- MySQL Driver -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Lombok: 添加这一项，解决 @Getter/@Setter 标红 -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
 ```
 
-### 2. 解决 Maven 依赖问题
-如果遇到依赖下载问题（特别是国内用户）：
-1. 创建或编辑 terminal输入 
-```
-vi ~/.m2/settings.xml
-```
-2. 添加阿里云镜像配置：
-```xml
-<mirrors>
-  <mirror>
-    <id>aliyunmaven</id>
-    <mirrorOf>*</mirrorOf>
-    <url>https://maven.aliyun.com/repository/public</url>
-  </mirror>
-</mirrors>
-```
-
-### 3. IntelliJ 配置要点
-- **File → Project Structure → Project**:
-  - Project SDK: 选择 JDK 21
-  - Project language level: 21
-- **File → Settings → Build, Execution, Deployment → Compiler → Java Compiler**:
-  - Target bytecode version: 21
-- **运行配置**:
-  - 确保JRE设置为JDK 21
+---
 
 ## 🚀 启动项目
 
-1. 确保MySQL服务已启动
-2. 在IntelliJ中运行 `TodoApiApplication.java`
-3. 看到 `Tomcat started on port(s): 8080` 表示启动成功
+1. 启动数据库：`docker-compose up -d`
+2. 在 IntelliJ 中运行 `TodoApiApplication.java`
+3. 看到日志：
+   ```
+   Tomcat started on port 8080
+   Started TodoApiApplication in X seconds
+   ✅ 默认用户已创建：user
+   ```
+4. 使用 Postman 测试 API
+
+---
 
 ## 🐛 常见问题
 
-### 1. "Public Key Retrieval is not allowed" 错误
-- **原因**: MySQL 8.x 连接问题
-- **解决**: 确保数据库URL包含 `&allowPublicKeyRetrieval=true`
+### 1. `Public Key Retrieval is not allowed`
 
-### 2. "程序包org.springframework.boot不存在" 错误
-- **原因**: Maven依赖未正确下载
-- **解决**:
-  1. 检查Maven镜像配置
-  2. 执行 Maven → Reimport
-  3. File → Invalidate Caches → Invalidate and Restart
+- **原因**：MySQL 8 认证插件问题
+- **解决**：确保连接 URL 包含 `&allowPublicKeyRetrieval=true`
 
-### 3. 404 Not Found 错误
-- **原因**: 包结构不正确
-- **解决**: 确保Controller类在主应用类的包或子包中
+### 2. `SHOW TABLES` 看不到表
+
+- **可能原因**：
+  - 未启动 `docker-compose`
+  - 未正确设置 `MYSQL_DATABASE=tododb`
+  - 应用未启动（表由 Hibernate 自动创建）
+- **解决**：确认容器运行，重启 Spring Boot 应用
+
+### 3. Lombok 注解标红
+
+- **解决**：
+  1. 安装 Lombok 插件（IntelliJ → Plugins）
+  2. 启用 Annotation Processing
+  3. 重启 IDE
+
+### 4. 404 Not Found
+
+- **原因**：Controller 路径错误
+- **解决**：确认 `TaskController` 的 `@RequestMapping("/api/tasks")` 正确
+
+---
+
+## 📂 项目结构
+
+```
+src/main/java/com/example/todo_api/
+├── TodoApiApplication.java
+├── controller/TaskController.java
+├── entity/User.java
+├── entity/Task.java
+├── repository/UserRepository.java
+├── repository/TaskRepository.java
+└── dto/TaskDto.java
+```
+
+---
+
+## 🚀 下一步计划
+
+- ✅ 实现 JWT 用户认证
+- ✅ 添加注册/登录接口
+- ✅ 密码加密（BCrypt）
+- ✅ 全局异常处理
+- ✅ Swagger API 文档
+
+```
