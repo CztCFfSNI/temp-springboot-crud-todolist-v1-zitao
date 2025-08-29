@@ -1,45 +1,96 @@
 # 📋 TodoList REST API
 
-![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.5-green?logo=spring)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?logo=mysql)
+![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)  
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.5-green?logo=spring)  
+![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?logo=mysql)  
+![Docker](https://img.shields.io/badge/Docker-✔-blue?logo=docker)  
+![iOS](https://img.shields.io/badge/iOS-Swift-blue?logo=swift)
 
-一个简单的 TodoList REST API 实现，基于 Spring Boot 3 + JDK 21 + MySQL 8，支持用户绑定任务的 CRUD 操作。
+一个基于 **Spring Boot 3 + JDK 21 + MySQL 8 + Docker + Swift iOS** 的完整 TodoList 应用系统，支持后端 REST API 与跨平台前端（Web + iOS）的 CRUD 操作。
 
-> 🔐 当前版本暂未实现注册/登录功能，所有操作默认绑定到一个预设的默认用户。
+> 🔐 当前版本使用预设默认用户，所有任务操作自动绑定该用户。适合快速开发与演示。
 
 ---
 
 ## 🚀 项目特点
 
-- **默认用户绑定**：系统初始化时创建默认用户 `user`，所有任务操作均绑定该用户
-- **双表结构**：包含 `user` 和 `task` 两张表，支持未来扩展用户系统
-- **JWT 预留**：架构设计为未来集成 JWT 认证做准备
-- **Docker 化数据库**：使用 Docker 部署 MySQL，避免本地环境依赖
-- **RESTful API**：符合 REST 规范的标准化接口设计
+- ✅ **全栈一体化**：Spring Boot 后端 + HTML 前端 + SwiftUI iOS 客户端
+- ✅ **默认用户绑定**：系统初始化自动创建用户 `user`，所有任务归属该用户
+- ✅ **Docker 化数据库**：使用 MySQL 8 容器部署，无需本地安装
+- ✅ **RESTful API**：标准化接口，支持增删改查（CRUD）
+- ✅ **跨平台访问**：支持浏览器、iOS 模拟器、真机访问
+- ✅ **前端集成**：内置静态 HTML 页面，开箱即用
+- ✅ **iOS 客户端**：Swift + SwiftUI 实现，支持网络请求与刷新
+
+---
+
+## 🧩 技术栈
+
+| 层级       | 技术 |
+|------------|------|
+| 后端框架   | Spring Boot 3.5.5 |
+| Java 版本  | JDK 21 |
+| 数据库     | MySQL 8 (Docker) |
+| ORM        | Spring Data JPA |
+| 构建工具   | Maven |
+| 前端       | HTML/CSS/JS (静态资源) |
+| 移动端     | SwiftUI (Swift) |
+| 容器化     | Docker |
+| IDE        | IntelliJ IDEA + Xcode |
 
 ---
 
 ## ⚙️ 环境要求
 
-- **JDK 21**（Spring Boot 3.x 必需）
-- **MySQL 8.0+**（推荐使用 Docker 部署）
+- **JDK 21**
 - **Maven 3.6.3+**
-- **Docker**（用于数据库容器化）
+- **Docker**（用于运行 MySQL）
 - **IntelliJ IDEA**（推荐）
+- **Xcode**（iOS 开发）
+- **局域网环境**（用于 iOS 访问后端）
 
 ---
 
-## 🗄️ 应用配置
+## 🗄️ 数据库配置（Docker）
+
+### 1. 启动 MySQL 容器
+
+```bash
+docker run -d \
+  --name todolist_v2 \
+  -p 3307:3306 \
+  -e MYSQL_ROOT_PASSWORD=xxxxx \
+  -e MYSQL_DATABASE=tododb \
+  mysql:8
+```
+
+> ✅ 容器启动后，数据库 `tododb` 将自动创建。
+
+### 2. 验证容器运行
+
+```bash
+docker ps
+```
+
+应看到：
+
+```
+CONTAINER ID   IMAGE     PORTS                    NAMES
+bc7c1a67da31   mysql:8   0.0.0.0:3307->3306/tcp   todolist_v2
+```
+
+---
+
+## 🛠 应用配置
 
 ### 1. 配置 `src/main/resources/application.yml`
 
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3307/tododb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&allowPublicKeyRetrieval=true # 端口别占用，这个很重要，查看通过：lsof -i :3307
+    url: jdbc:mysql://localhost:3307/tododb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: xxxxx # 换自己密码
+    password: xxxxx # 自己的密码
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -50,209 +101,156 @@ spring:
 ```
 
 > 🔁 注意：
->
-> - 使用 `application.yml`（不是 `.properties`）
 > - `allowPublicKeyRetrieval=true` 是连接 MySQL 8 的关键
-> - 推荐使用 `appuser` 而非 `root` 连接
+> - 确保 `tododb` 数据库已存在
+> - 端口 `3307` 映射到容器 `3306`
+
+---
+
+## 🚀 启动后端服务
+
+### 1. 编译并运行
+
+```bash
+./mvnw spring-boot:run
+```
+
+### 2. 验证启动成功
+
+看到日志：
+
+```
+Tomcat started on port 8080
+Started TodoApiApplication in X seconds
+✅ 默认用户已创建：user
+```
+
+### 3. 测试 API
+
+- 查看任务列表：`http://localhost:8080/api/tasks` → 返回 `[]`
+- 查看首页：`http://localhost:8080/` → 显示 HTML 页面
+
+---
+
+## 🖥️ 前端页面（HTML）
+
+### 1. 文件位置
+
+```
+src/main/resources/static/index.html
+```
+
+### 2. 功能
+
+- 显示任务列表
+- 支持添加、删除、标记完成
+- 自动刷新
+
+### 3. 访问地址
+
+👉 `http://localhost:8080/`
+
+---
+
+## 📱 iOS 客户端（Swift + SwiftUI）
+
+### 1. 项目名称
+
+`TodoListApp`（Xcode 项目）
+
+### 2. 运行步骤
+
+1. 打开 Xcode → 打开项目 `TodoListApp.xcodeproj`
+2. 在 `ContentView.swift` 中修改 IP 地址：
+
+```swift
+private let baseURL = "http://192.168.0.100:8080/api/tasks"
+```
+
+> 🔁 将 `192.168.0.100` 替换为你电脑的局域网 IP（通过 `ifconfig` 查看）
+
+3. 在顶部选择模拟器（如 iPhone 15）
+4. 点击 ▶️ 运行
+
+### 3. 配置 `Info.plist`（允许 HTTP）
+
+```xml
+<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+</dict>
+```
+
+### 4. 功能
+
+- 下拉刷新获取任务
+- 显示标题、描述、状态
+- 支持跨设备访问（需同一 Wi-Fi）
 
 ---
 
 ## 🧪 Postman 测试指南
 
-### 1. 获取所有任务 (GET)
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| `GET` | `http://localhost:8080/api/tasks` | 获取所有任务 |
+| `POST` | `http://localhost:8080/api/tasks` | 创建任务 |
+| `GET` | `http://localhost:8080/api/tasks/{id}` | 获取单个任务 |
+| `PUT` | `http://localhost:8080/api/tasks/{id}` | 更新任务 |
+| `DELETE` | `http://localhost:8080/api/tasks/{id}` | 删除任务 |
 
-- **URL**: `http://localhost:8080/api/tasks`
-- **Method**: GET
-- **预期响应**: 返回默认用户的所有任务列表
+### 示例：创建任务（POST）
 
-### 2. 创建任务 (POST)
+```json
+{
+  "title": "学习 Spring Boot",
+  "description": "完成 CRUD 示例",
+  "status": "PENDING"
+}
+```
 
-- **URL**: `http://localhost:8080/api/tasks`
-- **Method**: POST
-- **Headers**:
-  - `Content-Type: application/json`
-- **Body** (JSON):
-  ```json
-  {
-    "title": "学习 Spring Boot",
-    "description": "完成 CRUD 示例",
-    "completed": false
-  }
-  ```
-- **预期响应**: `201 Created` + 新建任务数据
-
-### 3. 获取单个任务 (GET)
-
-- **URL**: `http://localhost:8080/api/tasks/{id}`
-- **Method**: GET
-- **预期响应**: `200 OK` + 任务详情
-
-### 4. 更新任务 (PUT)
-
-- **URL**: `http://localhost:8080/api/tasks/{id}`
-- **Method**: PUT
-- **Headers**:
-  - `Content-Type: application/json`
-- **Body**:
-  ```json
-  {
-    "title": "已学会 Spring Boot",
-    "completed": true
-  }
-  ```
-- **预期响应**: `200 OK` + 更新后数据
-
-### 5. 删除任务 (DELETE)
-
-- **URL**: `http://localhost:8080/api/tasks/{id}`
-- **Method**: DELETE
-- **预期响应**: `204 No Content`
+> ✅ 响应状态：`201 Created`
 
 ---
 
-## 🛠 Maven 与 JDK 配置
+## 📂 项目结构
 
-### 1. `pom.xml` 关键配置
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.5</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
-
-    <groupId>com.example</groupId>
-    <artifactId>todo-api</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>todo-api</name>
-    <description>Todo List Plain Version</description>
-
-    <!-- 可选：设置项目 URL -->
-    <url>http://localhost:8080</url>
-
-    <!-- 修复：添加实际的 license -->
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
-    <!-- 可选：添加开发者信息 -->
-    <developers>
-        <developer>
-            <name>Your Name</name>
-            <email>you@example.com</email>
-            <organization>Personal</organization>
-            <organizationUrl>http://localhost</organizationUrl>
-        </developer>
-    </developers>
-
-    <!-- 可选：SCM 信息（Git） -->
-    <scm>
-        <connection>scm:git:https://github.com/yourname/todo-api.git</connection>
-        <developerConnection>scm:git:https://github.com/yourname/todo-api.git</developerConnection>
-        <url>https://github.com/yourname/todo-api</url>
-        <tag>HEAD</tag>
-    </scm>
-
-    <properties>
-        <java.version>21</java.version>
-        <!-- 显式声明插件版本（可选，Parent 已包含，但显式更清晰） -->
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-    </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- MySQL Driver -->
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- Lombok: 添加这一项，解决 @Getter/@Setter 标红 -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- Test -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
-</project>
+```
+src/main/java/com/example/todo_api/
+├── TodoApiApplication.java         # 主启动类
+├── controller/
+│   └── TaskController.java         # REST API 控制器
+├── entity/
+│   ├── User.java                   # 用户实体
+│   ├── Task.java                   # 任务实体
+│   └── Status.java                 # 任务状态枚举
+├── repository/
+│   ├── UserRepository.java         # 用户数据访问
+│   └── TaskRepository.java         # 任务数据访问
+├── dto/
+│   └── TaskDto.java                # 数据传输对象
+└── config/
+    ├── DataInitializer.java        # 初始化默认用户
+    └── WebConfig.java              # 静态资源路由
 ```
 
 ---
 
-## 🚀 启动项目
+## 🐛 常见问题与解决
 
-1. 启动数据库：`docker-compose up -d`
-2. 在 IntelliJ 中运行 `TodoApiApplication.java`
-3. 看到日志：
-   ```
-   Tomcat started on port 8080
-   Started TodoApiApplication in X seconds
-   ✅ 默认用户已创建：user
-   ```
-4. 使用 Postman 测试 API
+### 1. `allowPublicKeyRetrieval` 错误
 
----
+- **现象**：`Public Key Retrieval is not allowed`
+- **解决**：确保 URL 包含 `&allowPublicKeyRetrieval=true`
 
-## 🐛 常见问题
+### 2. `index.html` 404
 
-### 1. `Public Key Retrieval is not allowed`
-
-- **原因**：MySQL 8 认证插件问题
-- **解决**：确保连接 URL 包含 `&allowPublicKeyRetrieval=true`
-
-### 2. `SHOW TABLES` 看不到表
-
-- **可能原因**：
-  - 未启动 `docker-compose`
-  - 未正确设置 `MYSQL_DATABASE=tododb`
-  - 应用未启动（表由 Hibernate 自动创建）
-- **解决**：确认容器运行，重启 Spring Boot 应用
+- **原因**：文件未放在 `src/main/resources/static/`
+- **解决**：
+  - 确认路径正确
+  - 执行 `mvn clean compile`
+  - 添加 `HomeController` 显式映射 `/`
 
 ### 3. Lombok 注解标红
 
@@ -261,34 +259,26 @@ spring:
   2. 启用 Annotation Processing
   3. 重启 IDE
 
-### 4. 404 Not Found
+### 4. iOS 无法连接后端
 
-- **原因**：Controller 路径错误
-- **解决**：确认 `TaskController` 的 `@RequestMapping("/api/tasks")` 正确
-
----
-
-## 📂 项目结构
-
-```
-src/main/java/com/example/todo_api/
-├── TodoApiApplication.java
-├── controller/TaskController.java
-├── entity/User.java
-├── entity/Task.java
-├── repository/UserRepository.java
-├── repository/TaskRepository.java
-└── dto/TaskDto.java
-```
+- **原因**：IP 错误或网络不通
+- **解决**：
+  - 使用 `ifconfig` 查看电脑 IP
+  - 确保手机/模拟器与电脑在同一 Wi-Fi
+  - 测试 `http://你的IP:8080/api/tasks` 是否可访问
 
 ---
 
 ## 🚀 下一步计划
 
-- ✅ 实现 JWT 用户认证
-- ✅ 添加注册/登录接口
-- ✅ 密码加密（BCrypt）
-- ✅ 全局异常处理
-- ✅ Swagger API 文档
-
-```
+| 功能 | 状态 |
+|------|------|
+| ✅ 后端 API + 数据库 | ✔️ |
+| ✅ 前端 HTML 页面 | ✔️ |
+| ✅ iOS Swift 客户端 | ✔️ |
+| 🔜 JWT 用户认证 | ❌ |
+| 🔜 用户注册/登录 | ❌ |
+| 🔜 密码加密（BCrypt） | ❌ |
+| 🔜 全局异常处理 | ❌ |
+| 🔜 Swagger API 文档 | ❌ |
+| 🔜 部署到云服务器 | ❌ |
